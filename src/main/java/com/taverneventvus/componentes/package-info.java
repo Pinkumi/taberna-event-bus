@@ -1,2 +1,2 @@
-/** Sistemas de la taberna que se implementarán en la siguiente etapa. */
+/** Publicadores y suscriptores de pedidos, bebidas y alimentos de la taberna. */
 package com.taverneventvus.componentes;
