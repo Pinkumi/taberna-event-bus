@@ -1,0 +1,53 @@
+@startuml
+!pragma layout smetana
+skinparam defaultFontSize 16
+skinparam componentStyle rectangle
+left to right direction
+title Componentes de El Gólem Alquímico
+component "Launcher\ncomposición y cierre" as App
+package "Publicadores y preparación" {
+  component SistemaDePedidos as Pedidos
+  component Barra
+  component Cocina
+  component "Banda\nejecutor periódico" as Banda
+  component "CatalogoProductos" as Catalogo
+  component "PreparacionProgramada\ninstancia e hilo por componente" as Preparacion
+}
+component "EventBus\nregistro por Class + Consumer\nnotificación síncrona" as Bus
+package "Suscriptores de notificación" {
+  component PanelLED as Panel
+  component SistemaDeSonido as Sonido
+  component SistemaDeHumo as Humo
+}
+App ..> Pedidos : crea
+App ..> Barra : crea y cierra
+App ..> Cocina : crea y cierra
+App ..> Banda : crea y cierra
+App ..> Bus : crea
+App ..> Panel : crea y cierra
+App ..> Sonido : crea y cierra
+App ..> Humo : crea y cierra
+Pedidos --> Bus : publica PedidoRealizadoEvent
+Bus --> Barra : entrega PedidoRealizadoEvent
+Bus --> Cocina : entrega PedidoRealizadoEvent
+Barra --> Bus : publica BebidaServidaEvent
+Cocina --> Bus : publica ComidaPreparadaEvent
+Banda --> Bus : publica BandaTocandoEvent
+Bus --> Panel : entrega los cuatro eventos
+Bus --> Sonido : entrega BandaTocandoEvent
+Bus --> Humo : entrega BandaTocandoEvent
+Barra ..> Catalogo : clasifica
+Cocina ..> Catalogo : clasifica
+Barra ..> Preparacion : programa a 2 s
+Cocina ..> Preparacion : programa a 5 s
+note bottom of Humo
+  Activa efectos solo con
+  Through the Fire and Flames.
+  No requiere modificar Banda ni EventBus.
+end note
+legend bottom
+  Las flechas continuas muestran el flujo de eventos mediante el bus.
+  Las punteadas muestran uso o creación. No hay llamadas directas entre sistemas.
+  Todo se ejecuta en un único proceso Java, sin servicios externos.
+endlegend
+@enduml

@@ -1,0 +1,126 @@
+@startuml
+!pragma layout smetana
+skinparam classAttributeIconSize 0
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 16
+skinparam packageStyle rectangle
+hide empty members
+title El Gólem Alquímico — clases del proyecto
+
+package "com.taverneventvus" {
+  class Launcher {
+    +{static} main(args : String[]) : void
+  }
+}
+package "com.taverneventvus.bus" {
+  class EventBus {
+    -suscriptores : Map<Class<?>, List<Consumer<?>>>
+    +suscribir<T>(tipoDeEvento : Class<T>, suscriptor : Consumer<T>) : void
+    +desuscribir<T>(tipoDeEvento : Class<T>, suscriptor : Consumer<T>) : void
+    +publicar<T>(evento : T) : void
+  }
+}
+package "com.taverneventvus.componentes" {
+  class SistemaDePedidos {
+    +registrarPedido(mesaId : String, pedidoId : String, productos : List<String>) : void
+  }
+  class Barra <<AutoCloseable>> {
+    -prepararPedido(pedido : PedidoRealizadoEvent) : void
+    +estaCerrada() : boolean
+    +close() : void
+  }
+  class Cocina <<AutoCloseable>> {
+    -prepararPedido(pedido : PedidoRealizadoEvent) : void
+    +estaCerrada() : boolean
+    +close() : void
+  }
+  class PreparacionProgramada <<interna, AutoCloseable>> {
+    -ejecutor : ScheduledExecutorService
+    ~programar(tarea : Runnable) : void
+    ~estaCerrada() : boolean
+    +close() : void
+  }
+  class CatalogoProductos {
+    +{static} esBebida(producto : String) : boolean
+    +{static} esAlimento(producto : String) : boolean
+    +{static} esConocido(producto : String) : boolean
+  }
+  class Banda <<AutoCloseable>> {
+    -nombre : String
+    -ejecutor : ScheduledExecutorService
+    +tocarCancion(nombreCancion : String, duracion : int) : void
+    +iniciar(nombreCancion : String, duracion : int, intervalo : Duration) : void
+    +detener() : void
+    +estaDetenida() : boolean
+    +close() : void
+  }
+  class SistemaDeSonido <<AutoCloseable>> {
+    +close() : void
+  }
+  class PanelLED <<AutoCloseable>> {
+    -mostrar(mensaje : String, color : String) : void
+    +close() : void
+  }
+  class SistemaDeHumo <<AutoCloseable>> {
+    +close() : void
+  }
+}
+package "com.taverneventvus.eventos" {
+  class PedidoRealizadoEvent <<record>> {
+    mesaId : String
+    pedidoId : String
+    productos : List<String>
+  }
+  class BebidaServidaEvent <<record>> {
+    mesaId : String
+    bebida : String
+  }
+  class ComidaPreparadaEvent <<record>> {
+    pedidoId : String
+    plato : String
+  }
+  class BandaTocandoEvent <<record>> {
+    nombreBanda : String
+    nombreCancion : String
+    duracion : int
+  }
+}
+Launcher ..> EventBus : crea y conecta componentes
+Launcher ..> SistemaDePedidos
+Launcher ..> Banda
+Launcher ..> Barra
+Launcher ..> Cocina
+Launcher ..> PanelLED
+Launcher ..> SistemaDeSonido
+Launcher ..> SistemaDeHumo
+SistemaDePedidos --> EventBus
+Barra --> EventBus
+Cocina --> EventBus
+Banda --> EventBus
+PanelLED --> EventBus
+SistemaDeSonido --> EventBus
+SistemaDeHumo --> EventBus
+Barra *-- PreparacionProgramada : 1
+Cocina *-- PreparacionProgramada : 1
+Barra ..> CatalogoProductos
+Cocina ..> CatalogoProductos
+Banda -[hidden]down-> SistemaDeSonido
+SistemaDeSonido -[hidden]down-> SistemaDeHumo
+SistemaDePedidos -[hidden]down-> Barra
+Barra -[hidden]down-> Cocina
+PanelLED -[hidden]down-> CatalogoProductos
+CatalogoProductos -[hidden]down-> PreparacionProgramada
+PedidoRealizadoEvent -[hidden]down-> BebidaServidaEvent
+BebidaServidaEvent -[hidden]down-> ComidaPreparadaEvent
+ComidaPreparadaEvent -[hidden]down-> BandaTocandoEvent
+legend bottom
+  Eventos publicados: Pedidos -> PedidoRealizadoEvent; Barra -> BebidaServidaEvent;
+  Cocina -> ComidaPreparadaEvent; Banda -> BandaTocandoEvent.
+  Suscriptores: Barra y Cocina -> pedidos; PanelLED -> los cuatro eventos;
+  Sonido y Humo -> música. Estas dependencias se resumen aquí para evitar cruces.
+  Los records son inmutables; productos usa List.copyOf.
+  AutoCloseable indica implementación de la interfaz Java.
+  Cada flecha al bus representa una referencia, sin enlaces directos entre sistemas.
+  Se omiten constructores, accesores de records y detalles de la biblioteca Java.
+endlegend
+@enduml

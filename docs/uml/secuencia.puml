@@ -1,0 +1,58 @@
+@startuml
+skinparam defaultFontSize 16
+skinparam maxMessageSize 180
+hide footbox
+title Pedido y música concurrentes en Launcher
+participant Launcher as App
+participant SistemaDePedidos as Pedidos
+participant EventBus as Bus
+participant PanelLED as Panel
+participant Barra
+participant "PreparacionProgramada\n(hilo barra)" as EB
+participant Cocina
+participant "PreparacionProgramada\n(hilo cocina)" as EC
+participant Banda
+participant SistemaDeSonido as Sonido
+participant SistemaDeHumo as Humo
+note over App,Humo
+  Launcher crea los componentes; sus constructores registran los Consumer en EventBus.
+  Panel: cuatro tipos. Barra y Cocina: pedidos. Sonido y Humo: música.
+end note
+App -> Pedidos : registrarPedido(mesa_5, pedido_123, [cerveza, hamburguesa])
+Pedidos -> Bus : publicar(PedidoRealizadoEvent)
+Bus -> Panel : accept(pedido)
+Panel -> Panel : mostrar nuevo pedido
+Bus -> Barra : accept(pedido) / prepararPedido
+Barra -> EB : programar(tarea cerveza, demora configurada 2 s)
+Bus -> Cocina : accept(pedido) / prepararPedido
+Cocina -> EC : programar(tarea hamburguesa, demora configurada 5 s)
+Bus --> Pedidos : retorna sin esperar preparaciones
+Pedidos --> App : pedido publicado
+App -> Banda : tocarCancion("Through the Fire and Flames", 440)
+Banda -> Bus : publicar(BandaTocandoEvent)
+Bus -> Panel : accept(evento musical)
+Bus -> Sonido : accept(evento musical) / ajustar ecualizador
+Bus -> Humo : accept(evento musical)
+Humo -> Humo : título exacto: activar humo
+App -> Banda : iniciar("El Algoritmo del Amor", 180, 1 s)
+par hilo de la banda (publicación inmediata y cada segundo)
+  loop hasta cerrar Banda
+    Banda -> Bus : publicar(BandaTocandoEvent)
+    Bus -> Panel : accept(evento musical)
+    Bus -> Sonido : accept(evento musical)
+    Bus -> Humo : accept(evento musical) / ignorar otra canción
+  end
+else hilo de la barra (aprox. 2 s)
+  EB -> Bus : publicar(BebidaServidaEvent(mesa_5, cerveza))
+  Bus -> Panel : accept(bebida) / mostrar bebida servida
+else hilo de la cocina (aprox. 5 s)
+  EC -> Bus : publicar(ComidaPreparadaEvent(pedido_123, hamburguesa))
+  Bus -> Panel : accept(comida) / mostrar comida preparada
+end
+note over App,Humo
+  Al salir del try, close() se ejecuta en orden inverso a la creación:
+  Cocina y Barra esperan sus tareas; Banda detiene su ejecutor;
+  Humo, Sonido y Panel cancelan sus suscripciones. La aplicación termina.
+  Cada notificación del bus es síncrona en su hilo publicador.
+end note
+@enduml
