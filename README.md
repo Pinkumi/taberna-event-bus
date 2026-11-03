@@ -11,10 +11,10 @@ Paquetes bajo `com.taverneventvus`:
 - Raíz: aplicación principal (`Launcher`).
 - `bus`: bus de eventos.
 - `eventos`: eventos inmutables.
-- `componentes`: pedidos, barra, cocina y catálogo de productos.
+- `componentes`: pedidos, barra, cocina, catálogo, banda, sonido y panel LED.
 
-La segunda etapa incluye `SistemaDePedidos`, `Barra` y `Cocina`.
-Todavía no se implementan banda, sonido, panel LED ni humo.
+La tercera etapa incorpora `Banda`, `SistemaDeSonido` y `PanelLED`.
+Todavía no se implementa el sistema de humo ni se generan los diagramas finales.
 
 El bus notifica síncronamente en el hilo publicador por tipo exacto, con acceso
 al registro protegido entre hilos. Los callbacks se ejecutan fuera del bloqueo
@@ -51,3 +51,24 @@ un `Duration` alternativo para las pruebas, que usan tiempos de 0 a 10 milisegun
 La utilidad interna `PreparacionProgramada` comparte la programación y cierre
 de ejecutores. Las pruebas verifican filtrado, datos, cierre, desuscripción y
 preparación paralela sin bloquear al publicador.
+
+## Música y notificaciones
+
+El mismo `Launcher` inicia a Los Seguidores de Dijkstra con El Algoritmo del Amor
+(180 segundos como dato del evento), publicando inmediatamente y cada segundo
+mientras se preparan los productos. Sonido ajusta el ecualizador y el panel
+muestra los cuatro tipos de eventos. La demostración sigue durando unos 5 segundos.
+
+`Banda.tocarCancion(nombreCancion, duracion)` publica una canción directamente.
+`Banda.iniciar(nombreCancion, duracion, intervalo)` repite esa canción con un
+`Duration` configurable de al menos un milisegundo. Solo se inicia una vez;
+`detener()` o `close()` cancela la repetición y cierra su ejecutor, esperando
+hasta 5 segundos por una notificación en curso antes de solicitar interrupción.
+Una banda detenida no puede reiniciarse.
+
+Sonido y panel implementan `AutoCloseable` para cancelar sus suscripciones.
+El cierre de la aplicación espera primero las preparaciones, detiene la banda
+y finalmente desuscribe sonido y panel. El panel usa texto sin colores por
+defecto; `new PanelLED(bus, true)` habilita ANSI opcionalmente.
+Las pruebas usan intervalos musicales de 10 milisegundos y sincronización con
+`CountDownLatch` para comprobar la convivencia de música y preparaciones.
