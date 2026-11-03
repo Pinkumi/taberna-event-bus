@@ -7,17 +7,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-/** Bus síncrono para uso en un solo hilo; distribuye por tipo exacto de evento. */
+/** Bus síncrono con registro seguro entre hilos; distribuye por tipo exacto. */
 public class EventBus {
     private final Map<Class<?>, List<Consumer<?>>> suscriptores = new HashMap<>();
 
-    public <T> void suscribir(Class<T> tipoDeEvento, Consumer<T> suscriptor) {
+    public synchronized <T> void suscribir(Class<T> tipoDeEvento, Consumer<T> suscriptor) {
         Objects.requireNonNull(tipoDeEvento);
         Objects.requireNonNull(suscriptor);
         suscriptores.computeIfAbsent(tipoDeEvento, tipo -> new ArrayList<>()).add(suscriptor);
     }
 
-    public <T> void desuscribir(Class<T> tipoDeEvento, Consumer<T> suscriptor) {
+    public synchronized <T> void desuscribir(Class<T> tipoDeEvento, Consumer<T> suscriptor) {
         Objects.requireNonNull(tipoDeEvento);
         Objects.requireNonNull(suscriptor);
         List<Consumer<?>> registrados = suscriptores.get(tipoDeEvento);
@@ -31,11 +31,12 @@ public class EventBus {
 
     public <T> void publicar(T evento) {
         Objects.requireNonNull(evento);
-        List<Consumer<?>> registrados = suscriptores.get(evento.getClass());
-        if (registrados != null) {
-            for (Consumer<?> suscriptor : List.copyOf(registrados)) {
-                notificar(suscriptor, evento);
-            }
+        List<Consumer<?>> copia;
+        synchronized (this) {
+            copia = List.copyOf(suscriptores.getOrDefault(evento.getClass(), List.of()));
+        }
+        for (Consumer<?> suscriptor : copia) {
+            notificar(suscriptor, evento);
         }
     }
 
