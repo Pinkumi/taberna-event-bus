@@ -14,3 +14,13 @@ Paquetes bajo `com.taverneventvus`:
 - `componentes`: reservado para los futuros sistemas de la taberna.
 
 Esta etapa incluye configuración, bus y eventos. Los sistemas se implementarán después.
+
+El bus es síncrono, para un solo hilo, y notifica por tipo exacto. Para desuscribirse,
+se debe conservar y pasar el mismo `Consumer` registrado. Las modificaciones de
+suscripciones durante una notificación se aplican a las publicaciones posteriores.
+Las excepciones de los suscriptores se propagan al publicador.
+
+Los eventos son records: `PedidoRealizadoEvent`, `BebidaServidaEvent`,
+`ComidaPreparadaEvent` y `BandaTocandoEvent`. Los identificadores son `String`,
+los productos son una copia inmutable de `List<String>` y la duración musical
+es un entero en segundos, siguiendo los ejemplos de `Instrucciones.pdf`.
